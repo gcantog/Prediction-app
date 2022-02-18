@@ -1,0 +1,267 @@
+---
+title: "Final Assignment"
+author: "Gonzalo Canto"
+date: "22 March 2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r code, include=FALSE}
+library(stringr)
+library(reshape2)
+# library(stringi)
+library(tm)
+library(wordcloud)
+library(ggplot2)
+# library(tidyverse)
+library(dplyr)
+
+# setwd("C:/Users/usuario/R course/Course 10/en_US")
+#Select ALL DOCUMENTS in Blogs
+allBlogs <- readRDS(file = "allBlogs.rds")
+# blogs <- readLines("en_US.blogs.txt")
+#Select ALL DOCUMENTS in News
+allNews <- readRDS(file = "allNews.rds")
+# News <- readLines("en_US.news.txt")
+#Select ALL DOCUMENTS in Twitters
+allTwitter <- readRDS(file = "allTwitter.rds")
+# Twitter <- readRDS(file = "allTwitter.rds")
+
+# set.seed(4321)
+# allTwitter  <- sample(Twitter, length(Twitter))
+# allBlogs    <- sample(blogs, length(blogs) * 0.005)
+# allNews     <- sample(News, length(News)* 0.01 )
+
+rm(blogs)
+rm(News)
+rm(Twitter)
+
+
+```
+
+```{r code3, include=FALSE}
+tokenmaker <- function(x) {
+        corpus <- Corpus(VectorSource(x))
+        corpus <- tm_map(corpus, content_transformer(tolower))
+        corpus <- tm_map(corpus, removePunctuation)
+        corpus <- tm_map(corpus, stripWhitespace)
+        corpus <- tm_map(corpus, removeWords, stopwords("english"))
+        corpus <- tm_map(corpus, removeNumbers)
+        corpus <- tm_map(corpus, PlainTextDocument)
+        #        corpus <- tm_map(corpus, stemDocument)
+        corpus <- Corpus(VectorSource(corpus))
+}  
+
+wordcounter <- function(x) {
+        dtm<-DocumentTermMatrix(x)
+        dtm_matrix <- as.matrix(dtm)
+        word_freq <- colSums(dtm_matrix)
+        word_freq <- sort(word_freq, decreasing = TRUE)
+        words <- names(word_freq)
+        return(list(words, word_freq))
+        rm(dtm)
+        rm(dtm_matrix)
+        rm(word_freq)
+        rm(words)
+
+}  
+
+NextWordIs <- function(x,y){
+        BQuest<-grepl(x, allBlogs, ignore.case=TRUE)
+        BDocs<-allBlogs[BQuest]
+        textoachado<-'a'
+        NextWordIs<-'a'
+        i<-length(BDocs)
+        if (i>0)
+        {
+                for (i in 1:i)
+                {  textoachado[i]<- str_extract(BDocs[i], y)
+                  NextWordIs[i]<- word(textoachado[i],-1)
+                # NextWordIs[i]<- stri_extract_last_words(textoachado[i]) 
+                }
+        }
+        NQuest<-grepl(x, allNews, ignore.case=TRUE)
+        NDocs<-allNews[NQuest]
+        j=length(NDocs)
+        if (j>0)
+        {
+                for (j in 1:j)
+                {  textoachado[i+j]<- str_extract(NDocs[j], y)
+                NextWordIs[i+j]<- word(textoachado[i+j],-1)
+                # NextWordIs[i+j]<- stri_extract_last_words(textoachado[i+j]) 
+                }
+        }
+        TQuest<-grepl(x, allTwitter, ignore.case=TRUE)
+        TDocs<-allTwitter[TQuest]
+        k=length(TDocs)
+        if (k>0)
+        {
+                for (k in 1:k)
+                {  textoachado[i+j+k]<- str_extract(TDocs[k], y)
+                NextWordIs[i+j+k]<- word(textoachado[i+j+k],-1)
+                # NextWordIs[i+j+k]<- stri_extract_last_words(textoachado[i+j+k])
+                }
+        }
+        bundle<-as.data.frame(NextWordIs, stringsAsFactors=FALSE)
+        blogs_token <- tokenmaker(bundle)
+        blogs_words <- wordcounter(blogs_token)
+        tdm_Blogs<-TermDocumentMatrix(blogs_token)
+        m_Blogs<-as.matrix(tdm_Blogs)
+        v_Blogs<-sort(rowSums(m_Blogs),decreasing=TRUE)
+        return(list(head(v_Blogs,100)))
+        
+        rm(BQuest)
+        rm(BDocs)
+        rm(textoachado)
+        rm(NQuest)
+        rm(NDocs)
+        rm(TQuest)
+        rm(TDocs)
+        rm(bundle)
+        rm(blogs_token)
+        rm(blogs_words)
+        rm(tdm_Blogs)
+        rm(m_Blogs)
+        rm(v_Blogs)
+}
+
+
+```
+
+
+
+```{r}
+
+library(shiny)
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+        titlePanel("Final Assignment: App with Shiny"),
+        sidebarLayout(
+                sidebarPanel(
+                        helpText("Selection Pane"),
+                        tags$head(tags$style("#text1{color: black;
+                                             font-size: 20px;
+                                             font-style: bold;
+                                             }")),
+                        tags$head(tags$style("#text2{color: black;
+                                             font-size: 20px;
+                                             font-style: bold;
+                                             }"))
+                        ,
+                        tags$head(tags$style("#text5{color: black;
+                                             font-size: 20px;
+                                             font-style: bold;
+                                             }")),
+
+                        textInput("box1", "Enter Text", value = "Enter Words to Predict")
+                        ,
+                        submitButton("Submit")
+                ),
+                mainPanel(
+                        tabsetPanel(type = "tabs", 
+                                    tabPanel("Documentation ", br(), textOutput("text1"), textOutput("text4"), textOutput("text2"), textOutput("text3"), textOutput("text5"),textOutput("text6")),
+                                    tabPanel("Table", br(),textOutput("text8"), tableOutput('table')),
+                                    tabPanel("Bar Chart", br(),textOutput("text7"), plotOutput('newBar'))
+                        )
+                )
+                        )
+)
+# Define server logic required to draw a histogram
+
+server <- function(input, output) {
+        
+        
+        output$text1 <- renderText({
+                "General Information"
+        })
+        output$text4 <- renderText({
+                "The goal of this exercise is to create a product to highlight the prediction algorithm that you have built and to provide an interface that can be accessed by others."
+        })
+        output$text2 <- renderText({
+                "Bar Chart Description"
+        })
+        output$text3 <- renderText({
+                "Once you have introduced the text to predict and click submit, the bar chart will show the most frequent words sorted in order of appearance"
+        })
+        output$text5 <- renderText({
+                "Table Description"
+        })
+        output$text6 <- renderText({
+                "Once you have introduced the text to predict and click submit, the tble  will show the top 6 most frequent words sorted in order of appearance"
+        })
+        output$text7 <- renderText({
+                "Please click on Submit to refresh the data."
+        })
+        output$text8 <- renderText({
+                "Please click on Submit to refresh the data."
+        })
+        
+        output$table <- renderTable({
+                sentences <- input$box1
+                numberwords <- sapply(strsplit(sentences, " "), length)
+                word<-word(sentences, 1:numberwords)
+                w<- sub(".", "", word)
+                x<-toupper(substring(word, 1, 1))
+                y<-tolower(substring(word, 1, 1))
+                z<-gsub(" ", "", trimws(paste(x,y)), fixed = TRUE)
+                h<-trimws(paste("[", z, "]"))
+                r<-gsub(" ", "", paste(h,w), fixed = TRUE)
+                o<-trimws(paste(r, collapse= '+ +' ))
+                extra<- "+ +[^ ]+"
+                concate<-paste0(o,extra)
+                DataFormatted<-NextWordIs(sentences, concate)
+                
+                setNames<-setNames(melt(DataFormatted), c('Word','AA'))
+                sampledata <- cbind(setNames, rownames(setNames))
+                DataFormatted2 <- select(sampledata, "rownames(setNames)", "Word")
+                names(DataFormatted2)<-c ("Word", "Frequency")
+                head(DataFormatted2) 
+                
+                
+        }) 
+
+        output$newBar <- renderPlot({
+                sentences <- input$box1
+                numberwords <- sapply(strsplit(sentences, " "), length)
+                word<-word(sentences, 1:numberwords)
+                w<- sub(".", "", word)
+                x<-toupper(substring(word, 1, 1))
+                y<-tolower(substring(word, 1, 1))
+                z<-gsub(" ", "", trimws(paste(x,y)), fixed = TRUE)
+                h<-trimws(paste("[", z, "]"))
+                r<-gsub(" ", "", paste(h,w), fixed = TRUE)
+                o<-trimws(paste(r, collapse= '+ +' ))
+                extra<- "+ +[^ ]+"
+                concate<-paste0(o,extra)
+                DataFormatted<-NextWordIs(sentences, concate)
+                library(reshape2)
+                setNames<-setNames(melt(DataFormatted), c('Word','AA'))
+                sampledata <- cbind(setNames, rownames(setNames))
+                DataFormatted2 <- select(sampledata, "rownames(setNames)", "Word")
+                names(DataFormatted2)<-c ("Word", "Frequency")
+
+
+                ggplot(DataFormatted2[1:30,],aes(x=reorder(Word,-Frequency),y=Frequency))+
+                        labs(title="Word Frequency Graph",y="Times Repeated",x="Words")+
+                        geom_bar(stat="identity")+
+                        theme(axis.text.x=element_text(angle=90))
+
+
+        })
+        
+} 
+
+
+
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
+
+```
+
