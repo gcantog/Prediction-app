@@ -1,0 +1,58 @@
+---
+title: "Final Assignment Presentation"
+author: "Gonzalo Canto"
+date: "22 March 2020"
+output: ioslides_presentation
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## App Description
+
+The main goal of this exercise is to create a product using a prediction algorithm that I have built.
+
+It also needs an interface that can be accessed by other from shinyapps.io. 
+This app uses three text datasets from Twitter, Blogs and News. 
+
+
+##Prediction Algorithm
+The algorithm used in the App has 3 sections:
+
+- Next word: Function to identify when the pattern of the input is occurring in the text helping myself with loops to find the next occurrece. It also identifies which one is the next word in all those cases.
+
+- tokenmaker: Function that cleans and trims the next word that is calculated, e.g. remove punctuation, trim white spaces, remove numbers, etc.
+
+- wordcounter: Function that calculates the frequency that the values of the output
+
+Nextword function is called on the server section of the shiny app. After that tokenmaker and wordcounter run and produce the final ouput.
+                
+## App Description
+
+The app consists of 2 parts that are created in the ui section of the shiny app.
+
+1- Sidebar: Here the user needs to introduce the searched words and then click on the submit button
+
+2- Tabs: There are 3 tabs. 
+        
+-  General Information
+        
+-  Table  which give us the top 6 words predicted sorted by order of preference
+        
+-  Bar Chart with the top words that are predicted according to frequency in a more visual way
+ 
+## App Link
+
+You can fin the app here:
+
+https://gcantog.shinyapps.io/FinalAssignment/
+
+
+## Thank you
+
+Thank you for reviewing!
+
+
