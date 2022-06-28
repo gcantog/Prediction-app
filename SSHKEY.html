@@ -1,0 +1,18 @@
+<div>INDEX </div>
+
+<div>
+1 - GENERATE SSH KEYS
+
+∼ssh-keygen -t rsa -b 4096 -C "gcantogomez@gmail.com"
+ls | grep testkey
+$ cat testkey.pub
+
+
+2 - UPLOAD PUBLIC KEY TO GIT
+
+
+3 - LINK LOCAL MACHINE THROUGH PRIVATE KEY TO GIT
+
+$ eval "$(ssh-agent -s)"
+$ ssh-add ~/.ssh/id_rsa
+</div>
